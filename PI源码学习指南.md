@@ -16,24 +16,48 @@
   -> TUI / Print / RPC 输出
 ```
 
-Pi 是一个 monorepo，核心能力分布在多个 package 中：
+> **本指南的定位**：不是让学习者把 Pi 整个仓库通读完，也不是默认最终项目必须 Fork Pi。
+> 学习者应达到：**会用 Pi SDK、能解释 SDK 下方的 Runtime、能判断扩展边界、知道什么时候 SDK 已经不够用。**
+>
+> 推荐以 Pi SDK 作为实际项目入口，向下精读 Agent Runtime 关键链路；最终项目优先通过 SDK / Extension 集成，只有遇到 SDK 无法覆盖的底层需求时再考虑 Fork 或向上游提 PR。
 
-| Package | 作用 | 学习重点 |
-| --- | --- | --- |
-| `packages/agent` | 通用有状态 Agent 运行时 + 通用 Agent Harness | Agent 状态、Agent Loop、事件、工具执行、harness、会话存储 |
-| `packages/ai` | 统一 LLM 和多家模型提供商接口 | 消息类型、流式输出、工具调用、provider 适配 |
-| `packages/coding-agent` | 面向终端编码场景的产品层 | 会话、认证、工具、扩展、压缩、CLI |
-| `packages/tui` | 终端 UI 框架 | 组件、布局、键盘输入、差异化渲染 |
-| `packages/protocol` | RPC 或跨进程通信协议 | 事件和命令的序列化 |
-| `packages/client` / `packages/server` | 客户端和服务端封装 | 远程运行和集成 |
-
-阅读顺序按下面的章节走，核心思想是：
+学习路径：
 
 ```text
-先跑 -> 再追调用链 -> 再画图 -> 再做实验 -> 再改源码 -> 最后自己重写最小版本
+先跑 SDK Demo
+    ↓
+从 SDK 入口追主调用链
+    ↓
+精读 Agent Loop / Tool / Session / Context
+    ↓
+做最小实验验证理解
+    ↓
+直接用 Pi SDK 做真实项目原型
+    ↓
+遇到底层限制再回查源码
+    ↓
+必要时 Extension / PR / Fork
+    ↓
+有余力再重写 pi-mini
 ```
 
-而不是"从 main.ts 第一行开始逐个文件读"。
+而不是"从 main.ts 第一行开始逐个文件读"，也不是"读完就 Fork Pi 在核心里塞业务代码"。
+
+Pi 是一个 monorepo，核心能力分布在多个 package 中：
+
+| Package | 作用 | 推荐深度 | 学习重点 |
+| --- | --- | --- | --- |
+| `packages/coding-agent` | SDK / 产品组装 / Coding Harness | ★★★★★ | 会话、认证、工具、扩展、压缩、CLI |
+| `packages/agent` | Agent Runtime / Harness | ★★★★★ | Agent 状态、Agent Loop、事件、工具执行、harness、会话存储 |
+| `packages/ai` | Model Adapter / Streaming | ★★★ | 消息类型、流式输出、工具调用、provider 适配 |
+| `packages/protocol` | RPC / Serialization | ★★ | 事件和命令的序列化 |
+| `packages/client` / `packages/server` | 远程封装 | ★★ | 远程运行和集成 |
+| `packages/tui` | Terminal UI | ★ | 组件、布局、键盘输入、差异化渲染 |
+
+> 对以 Pi SDK 构建上层产品的开发者，`coding-agent + agent` 是核心；
+> `tui` 不需要系统性精读，Provider 只深入一个真实实现即可。
+
+阅读顺序按下面的章节走。
 
 ---
 
@@ -126,9 +150,58 @@ npm run check
 
 ---
 
-## 三、第一阶段：先读 Agent 与 Agent Loop
+## 三、阶段 0：先用 SDK 跑起来
+
+在追源码之前，先以 SDK 使用者的身份跑一个最小 Demo。这样后面读到的每个源码层都能对应到一个"我实际调用过的东西"。
+
+### 1. 最小 SDK Demo
+
+从 [`packages/coding-agent/src/core/sdk.ts`](packages/coding-agent/src/core/sdk.ts) 的 `createAgentSession()` 开始：
+
+```text
+createAgentSession()
+    ↓
+session.prompt()
+    ↓
+subscribe(event)
+    ↓
+Tool
+    ↓
+Session
+```
+
+至少完成：
+
+1. 创建一个 Agent Session
+2. 指定模型
+3. 自定义 system prompt
+4. 注册或限制 tools
+5. 订阅事件
+6. 发起一次 prompt
+7. 保存 / 恢复一次 session
+
+测试环境优先使用 faux provider（`packages/ai/src/providers/faux.ts`），不需要真实 API key。
+
+### 2. 完成标准
+
+能够回答：
+
+1. `createAgentSession()` 返回了什么？
+2. `AgentSession.prompt()` 最终调用谁？
+3. SDK 提供了哪些扩展点？
+4. 哪些行为属于 SDK / AgentSession，哪些属于底层 Agent？
+5. 如果我要做自己的 Harness，最自然的接入点在哪里？
+
+这五个问题不用现在就全部答出，但它们是后续所有章节的导航问题。跑完 Demo 后，再进入下面的 Agent / Agent Loop 深读。
+
+---
+
+## 四、第一阶段：Agent 与 Agent Loop
 
 这是全文档最重要的一章。Agent Loop 是整个系统的核心，其他层（工具、事件、会话、模型）都是围绕它展开的。先掌握它，后面的章节都会变快。
+
+> 虽然最终产品通常通过 Pi SDK 使用 Agent，但要真正掌握 Pi，仍然必须理解 SDK 下方的 Agent Loop。
+> **SDK 是使用边界，Agent Loop 是理解边界。**
 
 ### 1. `Agent` 是有状态的外壳
 
@@ -244,7 +317,7 @@ Input / Context Prepare / Model Call / Streaming / Tool Detection
 
 ---
 
-## 四、第二阶段：Event 协议
+## 五、第二阶段：Event 协议
 
 ### 1. 事件是 Agent 与外部世界之间的协议
 
@@ -252,9 +325,11 @@ Input / Context Prepare / Model Call / Streaming / Tool Detection
 Agent Runtime
      ↓
   Event Stream
-  ┌────┼────────┐
-  ↓    ↓        ↓
-TUI   RPC      Log / Telemetry
+  ├─ CLI
+  ├─ Character Sidecar
+  ├─ Web UI
+  ├─ Trace
+  └─ Eval / Telemetry
 ```
 
 也就是说：
@@ -265,7 +340,11 @@ RPC ≠ Agent
 Print Mode ≠ Agent
 ```
 
-它们只是同一套 Agent 事件的不同消费者。理解事件顺序后，TUI、RPC、日志和测试就会变成不同的事件消费者，而不是不同的 Agent 实现。
+它们只是同一套 Agent 事件的不同消费者。
+
+> 学 Event 的目的不是为了实现 Pi 自己的 TUI，而是为了让自己的产品可以消费 Agent Runtime：
+> 自定义 CLI、Character Sidecar、Web UI、Trace、Eval / Telemetry 都是建立在同一套事件流上的不同消费者。
+> 理解事件顺序后，TUI、RPC、日志和测试就会变成不同的事件消费者，而不是不同的 Agent 实现。
 
 ### 2. 两层事件流
 
@@ -340,7 +419,7 @@ follow-up
 
 ---
 
-## 五、第三阶段：工具调用
+## 六、第三阶段：工具调用
 
 ### 1. 三种概念必须区分
 
@@ -414,9 +493,36 @@ const getWeatherTool: AgentTool = {
 - 最终发出什么事件？
 ```
 
+### 5. Tool 在自定义 Harness 中的使用
+
+除了理解工具在 Agent Loop 里的执行细节，还要从产品视角理解工具治理：
+
+```text
+Tool Definition
+Tool Permission
+Tool Filtering
+beforeToolCall
+afterToolCall
+Tool Result
+```
+
+必做实验：实现一个危险命令权限拦截：
+
+```text
+rm / del / format / git reset --hard
+        ↓
+beforeToolCall
+        ↓
+需要确认
+```
+
+> 上层产品优先通过 Tool Policy / Extension 做权限控制，而不是修改 Agent Loop。
+
 ---
 
-## 六、第四阶段：AgentSession 与 Harness
+## 七、第四阶段：AgentSession 与 Harness
+
+> **这是最终使用 Pi SDK 构建真实 Agent 产品时最重要的章节之一。**
 
 ### 1. Agent 与 AgentSession 的区别
 
@@ -500,6 +606,22 @@ packages/agent/src/harness/
 
 这一层的意义：`Agent` 回答"一轮运行怎么转"，`AgentSession` 回答"产品怎么组装"，`AgentHarness` 回答"可持久化、可恢复、可并发的编码 Agent 服务怎么抽象"。三者对照读，能看清哪些逻辑是通用的、哪些是产品特有的。
 
+四层边界总结：
+
+```text
+Agent
+= 一轮 Agent 如何运行
+
+AgentHarness
+= 通用可持久化 Agent 服务如何运行
+
+AgentSession
+= Coding Agent 产品如何把 Runtime / Session / Tool / Prompt 组装起来
+
+Your Harness
+= 在 Pi SDK 之上加入自己的 Router / Context / Skill / Character 等产品逻辑
+```
+
 ### 5. 最后读 CLI 和交互模式
 
 入口文件：
@@ -515,7 +637,7 @@ packages/agent/src/harness/
 
 ---
 
-## 七、第五阶段：Context / Session / Compaction
+## 八、第五阶段：Context / Session / Compaction
 
 这部分是 Coding Agent 长期运行质量的关键，值得单独一章。
 
@@ -608,9 +730,56 @@ Context Selection / Context Compression / Context Recovery
 / Tool Result Retention / Long-running Session
 ```
 
+### 5. 为什么自定义 Agent 项目必须理解 Context Boundary
+
+自定义 Agent 项目（多 Agent、Sidecar、Skill Scope、Project Memory 等）最容易出问题的就是上下文边界。要求学习者明确区分：
+
+```text
+Session History        会话持久化的全部记录
+Model Context          真正进入一次模型调用的内容
+Tool Result            工具执行结果，回流到上下文
+Compaction Summary     压缩后的摘要
+Project Context        项目资源（read-only projection 等）
+External Memory        模型上下文之外的记忆
+```
+
+基本原则：
+
+> 不应该把所有上层产品状态都直接塞进 `messages[]`。
+
+思考题：
+
+1. 哪些数据应该进入模型 Context？
+2. 哪些数据只应该保存在 Session / Memory？
+3. 哪些数据应该通过摘要共享？
+4. 如何避免一个 Sidecar Agent 的上下文污染主 Agent？
+5. Compaction 后哪些项目事实必须保留？
+
 ---
 
-## 八、第六阶段：pi-ai 模型层
+## 九、第六阶段：pi-ai 模型层
+
+学习目标：
+
+```text
+必须理解：
+Model
+Context
+StreamFunction
+Provider Adapter
+AssistantMessageEvent
+
+只深入：
+1 个 OpenAI-compatible provider
+
+对照阅读：
+1 个 Anthropic provider
+
+不要：
+系统性阅读所有 provider
+```
+
+> 学习目标是理解"Provider 差异如何被统一抽象"，不是成为某个 Provider SDK 的实现专家。
 
 ### 1. 先读类型，而不是 provider 实现
 
@@ -681,7 +850,21 @@ Tool Call Delta 如何统一？
 
 ---
 
-## 九、第七阶段：Extension 与 TUI
+## 十、第七阶段：Extension / Lifecycle Hooks
+
+> 最终项目需要新增行为时，优先顺序应是：
+>
+> ```text
+> SDK 配置
+> ↓
+> Extension
+> ↓
+> 自己的上层 Harness
+> ↓
+> PR
+> ↓
+> Fork Pi
+> ```
 
 ### 1. Extension 的介入点
 
@@ -696,19 +879,151 @@ beforeToolCall / afterToolCall   工具调用前后
 session_before_compact / session_compact   压缩前后
 ```
 
+重点掌握这些 Hook：
+
+- `transformContext`
+- `beforeToolCall`
+- `afterToolCall`
+- provider hooks
+- compaction hooks
+- session lifecycle
+
 学习方式：不要先读完整 Extension API，而是找一个扩展（`packages/coding-agent/src/extensions/`）跟踪它如何注册和触发。
 
-### 2. TUI 是事件消费者
+---
+
+## 十一、第八阶段：TUI / Output Adapter
+
+> 理解 TUI 是 Event Consumer 即可，不要求深入组件渲染、布局和键盘系统。
+
+### 1. TUI 是事件消费者
 
 `packages/tui` 只处理组件、布局、键盘输入和差异化渲染。交互模式把 Agent 事件翻译成组件更新。验证方式：比较 interactive、print、RPC 三种模式——它们共享同一个 Agent 运行时，差异只发生在"如何消费事件"这一层。
 
-### 3. 三种模式的对比实验
+### 2. 三种模式的对比实验
 
 分别运行 interactive、print 和 RPC 模式，比较它们是否共享同一个 Agent 运行时，以及差异发生在哪一层。目标：理解"核心逻辑复用，输出适配分离"的设计。
 
 ---
 
-## 十、如何高效搜索源码
+## 十二、SDK / Extension / Fork 的边界
+
+新增行为时，按下面顺序逐级判断。
+
+### 1. 优先 SDK
+
+适合：
+
+- 自定义 Prompt
+- Tool 配置
+- Session
+- Model
+- Event
+- Resource
+- Skills
+
+### 2. 优先 Extension
+
+适合：
+
+- Tool Hook
+- Provider Hook
+- Context Transform
+- Compaction Hook
+- Session 生命周期
+
+### 3. 自己的 Harness
+
+适合：
+
+- Input Router
+- Multi-context
+- Character Sidecar
+- Skill Scope
+- Prompt Compiler
+- Memory Namespace
+- Project-level Policy
+
+### 4. 考虑 PR / Fork
+
+只有当需要修改：
+
+- Agent Loop 调度语义
+- Context Assembly 底层
+- Compaction Algorithm
+- Session Tree 内部结构
+- Runtime 生命周期
+- SDK 未暴露且通用价值较高的 Hook
+
+时，才考虑：
+
+```text
+Issue
+↓
+Extension Proposal
+↓
+PR
+↓
+Fork
+```
+
+> **Fork 不是学习 Pi 的默认终点。** 大部分上层产品需求在 SDK / Extension / 自有 Harness 三层内就能完成。
+
+---
+
+## 十三、学习内容 → 最终项目能力映射
+
+| Pi 学习内容 | 最终项目对应能力 |
+| --- | --- |
+| SDK / AgentSession | Main Coding Agent |
+| Agent Loop | 理解主 Agent 执行 |
+| Event | CLI / Sidecar / Trace |
+| Tool Runtime | MCP / Shell / File Tool |
+| Context | 主上下文隔离 |
+| Session | Main / Character 独立会话 |
+| Compaction | 长任务上下文治理 |
+| Extension | 权限 / Hook / Context Transform |
+| Skill | Project Skill / Scope |
+| Model Adapter | 多模型支持 |
+
+> 角色系统、输入路由、Prompt DSL、Skill Scope、Context Bridge 等属于上层产品 Harness，不应该为了这些能力直接修改 Pi Agent Loop。
+
+读完本指南后应形成的心智模型：
+
+```text
+                    My Product
+                        │
+                 Custom Harness
+          ┌─────────────┼─────────────┐
+          │             │             │
+       Router        Context       Skill Policy
+          │             │             │
+          └─────────────┼─────────────┘
+                        ↓
+                    Pi SDK
+                        ↓
+                  AgentSession
+                        ↓
+                Agent / Harness
+                        ↓
+                   Agent Loop
+                        ↓
+              Model / Tool Runtime
+```
+
+而不是：
+
+```text
+读 Pi
+↓
+Fork Pi
+↓
+在 Pi 内部塞业务代码
+```
+
+---
+
+## 十四、如何高效搜索源码
 
 不要按文件名随机浏览，优先从符号和事件搜索：
 
@@ -738,31 +1053,39 @@ rg -n "tool_execution_end" packages/agent packages/coding-agent
 
 ---
 
-## 十一、七天路线：每天留下一个产物
+## 十五、七天路线：每天留下一个产物
 
-### Day 1：跑通 + 调用链
+### Day 1：Pi SDK + 主调用链
 
-阅读：`agent.ts`、`agent-loop.ts`
+阅读：
 
-输出：`01-agent-call-chain.md`
+- `packages/coding-agent/src/core/sdk.ts`
+- `agent-session-services.ts`
+- `agent-session-runtime.ts`
+
+实践：
+
+- 最小 `createAgentSession()` Demo
+- `session.prompt()`
+- `subscribe()`
+
+输出：`01-sdk-entry.md`
 
 必须画出：
 
 ```text
+createAgentSession
+↓
+AgentSession.prompt
+↓
 Agent.prompt
 ↓
-runPromptMessages
+Agent Loop
 ↓
-agentLoop / runAgentLoop
-↓
-runLoop
-↓
-streamAssistantResponse（transformContext -> convertToLlm -> streamFunction）
-↓
-LLM
+Model
 ```
 
-完成标准：能从 `Agent.prompt("hello")` 一路追到模型调用。
+完成标准：能从 SDK 入口一路追到模型调用，并能回答阶段 0 的五个问题。
 
 ### Day 2：Agent Loop
 
@@ -786,27 +1109,29 @@ flowchart TD
 
 ### Day 3：Tool Runtime
 
-自己写一个 fake tool（参考第五章的 `get_weather`）。
+自己写一个 fake tool（参考工具调用章节的 `get_weather`）。
 
 输出：`03-tool-runtime/`
 
-包含：正常工具、参数错误、执行异常、terminate、并行工具、beforeToolCall 拦截。
+包含：正常工具、参数错误、执行异常、terminate、并行工具、beforeToolCall 拦截、危险命令权限拦截。
 
-完成标准：能解释 Tool Definition / ToolCall / ToolResult 的区别，能回答第五章的"五个问题"。
+完成标准：能解释 Tool Definition / ToolCall / ToolResult 的区别，能回答工具调用章节的"五个问题"。
 
 ### Day 4：Event / Streaming
 
-打印所有事件（第四章实验）。
+打印所有事件（Event 章节实验），并写一个简单 Console Renderer。
 
-输出：`04-events.log`、`04-event-sequence.md`
+输出：`04-event-consumer/`（含 `04-events.log`、`04-event-sequence.md`）
 
-完成标准：能解释 TUI 为什么不需要知道 Agent 内部实现。
+不要深入 Pi TUI。
+
+完成标准：能解释 TUI 为什么不需要知道 Agent 内部实现，并说明自己的产品如何消费同一套事件流。
 
 ### Day 5：AgentSession / Harness
 
 阅读：`sdk.ts`、`agent-session.ts`、`agent-session-services.ts`、`packages/agent/src/harness/agent-harness.ts`
 
-输出：`05-agent-session.md`
+输出：`05-harness.md`
 
 画出：
 
@@ -821,36 +1146,50 @@ AgentSession
 └── Compaction
 ```
 
-完成标准：能解释 Agent 和 AgentSession 的职责边界，并说清 AgentHarness 与二者的关系。
+必须能回答：SDK / AgentSession / AgentHarness / Agent 四者边界分别是什么？
+
+完成标准：能解释四层边界，并说清自己产品最自然的接入点。
 
 ### Day 6：Context / Session / Compaction
 
-输出：`06-context.md`
+输出：`06-context-session.md`
 
 必须回答：上下文从哪里构建？什么时候压缩？压缩结果怎么保存？下一轮怎么恢复？
 
-完成标准：能解释 Coding Agent 为什么可以持续几十轮甚至更久。
+新增实验：创建两个独立 Session A、B，验证 A 的 messages 不进入 B。
 
-### Day 7：魔改 Pi
+完成标准：能解释 Coding Agent 为什么可以持续几十轮甚至更久，并能回答 Context Boundary 的五个思考题。
 
-不要继续阅读，直接动手。从下面任选两个：
+### Day 7：基于 Pi SDK 构建自己的 Harness 原型
+
+不要继续阅读，直接动手。实现：
 
 ```text
-增加自定义 Tool
-增加事件耗时日志
-实现 beforeToolCall 权限拦截
-修改 print-mode
-增加一个 faux provider test
-增加 Agent Run Trace
+MyHarness
+├── createMainSession()
+├── Tool Policy
+├── Event Logger
+├── Custom Prompt
+├── Skill Filter
+└── Session Isolation
 ```
 
-输出：`07-my-pi-modification/`
+至少完成：
 
-完成标准：能在不破坏 Agent 核心的情况下新增一个功能。
+1. 一个自定义 Tool
+2. 一个 beforeToolCall 权限规则
+3. 一个自定义 System Prompt
+4. 两个独立 Session
+5. 一个事件日志器
+6. 一个最小 Skill Filter
+
+输出：`07-my-harness/`
+
+完成标准：**不修改 Pi 核心源码，也能够构建一个具有自己行为规则的 Agent 产品原型。**
 
 ---
 
-## 十二、读完后的自测问题
+## 十六、读完后的自测问题
 
 如果下面的问题还不能回答，说明主线还没有完全掌握：
 
@@ -874,16 +1213,26 @@ AgentSession
 18. 如果要做远程 Agent，哪些层可以直接复用？
 19. 如果换成另一个 LLM Provider，Agent Loop 应不应该修改？
 20. 如果上下文越来越长，什么信息应该保留，什么信息可以压缩？
+21. `createAgentSession()` 到 `Agent Loop` 的完整调用链是什么？
+22. 什么功能应该通过 SDK 完成，而不是改 Pi 核心？
+23. 什么功能应该通过 Extension 完成？
+24. 如果我要做两个互相隔离的 Agent Context，应该在哪一层实现？
+25. 如果我要实现 Project Skill Scope，应该修改 Agent Loop 吗？
+26. 如果我要做 Prompt Compiler，应该在哪一层完成？
+27. 如何判断一个需求应该提交上游 PR，还是只做项目内部能力？
+28. 为什么最终产品使用 SDK，并不意味着源码学习没有价值？
+29. 如果 SDK 没有暴露某个 Hook，下一步是直接 Fork 吗？为什么？
+30. 如何保证升级 Pi 版本时，自定义 Harness 的维护成本最低？
 
-一个合格的学习结果不是"看过所有文件"，而是能够从一个用户行为反向追踪完整调用链，并能在合适的层加入新功能。
+一个合格的学习结果不是"看过所有文件"，而是能够从一个用户行为反向追踪完整调用链，并能在合适的层（优先 SDK / Extension / 自有 Harness）加入新功能。
 
 ---
 
-## 十三、常见误区
+## 十七、常见误区
 
 ### 误区 1：从 `main.ts` 第一行读到最后一行
 
-`main.ts` 包含 CLI、认证、升级、模式选择等大量边界逻辑，不能代表 Agent 核心。先读 `agent`，再回来看 `main`。
+`main.ts` 包含 CLI、认证、升级、模式选择等大量边界逻辑，不能代表 Agent 核心。先跑 SDK Demo，再读 `agent`，最后回来看 `main`。
 
 ### 误区 2：把 `AgentMessage` 当作模型消息
 
@@ -905,11 +1254,43 @@ Pi 的交互体验、工具调用显示、RPC 输出都依赖事件流。必须�
 
 通用 AgentHarness 正在上移到 `packages/agent/src/harness/`。学习"harness"概念时，要对照 `AgentSession`（产品组装）和 `AgentHarness`（通用能力）两层理解。
 
+### 误区 7：把 Fork Pi 当作学习终点
+
+学习 Pi 源码的默认产物不是"在 Pi 里塞业务代码"。大部分产品需求可以通过 SDK 配置、Extension 和自有 Harness 完成；只有在需要修改 Agent Loop 调度语义、Context Assembly 等底层行为时才考虑 PR / Fork（见 SDK / Extension / Fork 的边界章节）。
+
 ---
 
-## 十四、读完后的下一步：pi-mini
+## 十八、进阶选做：pi-mini
 
-完成主线后，不建议继续无限阅读源码。自己写一个最小版本：
+当已经完成一个基于 Pi SDK 的真实项目后，如果希望进一步验证对 Runtime 的理解，再实现 `pi-mini`。
+
+推荐顺序：
+
+```text
+Pi SDK Demo
+↓
+Pi 源码关键链路
+↓
+真实项目
+↓
+遇到问题回查源码
+↓
+上游 PR
+↓
+可选 pi-mini
+```
+
+而不是：
+
+```text
+读完 Pi
+↓
+先重写 Pi
+↓
+再做项目
+```
+
+`pi-mini` 是一个最小版本：
 
 ```text
 pi-mini/
@@ -957,3 +1338,24 @@ Model / Agent Loop / Tool Runtime / Event / Context / Session / Harness / Extens
 ```
 
 这九个概念，每一个都能说出：它解决什么问题、在哪个文件、对外暴露什么接口、和上下层怎么衔接。
+
+---
+
+## 学习完成标准
+
+```text
+学习完成 ≠ 通读 Pi
+
+学习完成 =
+会用 Pi SDK
++
+能从 SDK 追到 Agent Loop
++
+能解释 Tool / Event / Context / Session / Compaction
++
+能使用 Extension / Hook 扩展行为
++
+能在不修改 Pi 核心的情况下构建自己的 Harness
++
+知道什么时候真的需要 PR / Fork
+```
