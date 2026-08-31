@@ -1,19 +1,30 @@
 /**
  * Working Indicator Extension
+ * 工作指示器扩展
  *
  * Demonstrates `ctx.ui.setWorkingIndicator()` for customizing the inline
+ * 演示 `ctx.ui.setWorkingIndicator()` 如何自定义 pi 流式输出响应时显示的
  * working indicator shown while pi is streaming a response.
+ * 行内工作指示器。
  *
  * Usage:
+ * 用法：
  *   pi --extension examples/extensions/working-indicator.ts
  *
  * Commands:
+ * 命令列表：
  *   /working-indicator           Show current mode
+ *   /working-indicator           显示当前模式
  *   /working-indicator dot       Use a static dot indicator
+ *   /working-indicator dot       使用静态圆点指示器
  *   /working-indicator pulse     Use a custom animated indicator
+ *   /working-indicator pulse     使用自定义动画指示器
  *   /working-indicator none      Hide the indicator entirely
+ *   /working-indicator none      完全隐藏指示器
  *   /working-indicator spinner   Restore an animated spinner
+ *   /working-indicator spinner   恢复动画旋转指示器
  *   /working-indicator reset     Restore pi's default spinner
+ *   /working-indicator reset     恢复 pi 的默认旋转指示器
  */
 
 import type { ExtensionAPI, ExtensionContext, WorkingIndicatorOptions } from "@earendil-works/pi-coding-agent";

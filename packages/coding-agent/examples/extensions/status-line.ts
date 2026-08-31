@@ -1,8 +1,11 @@
 /**
  * Status Line Extension
+ * 状态栏扩展
  *
  * Demonstrates ctx.ui.setStatus() for displaying persistent status text in the footer.
+ * 演示 ctx.ui.setStatus() 如何在页脚显示持久状态文本。
  * Shows turn progress with themed colors.
+ * 使用主题色展示回合进度。
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";

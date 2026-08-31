@@ -1,8 +1,11 @@
 /**
  * Protected Paths Extension
+ * 受保护路径扩展
  *
  * Blocks write and edit operations to protected paths.
+ * 拦截对受保护路径的写入和编辑操作。
  * Useful for preventing accidental modifications to sensitive files.
+ * 可用于防止意外修改敏感文件。
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";

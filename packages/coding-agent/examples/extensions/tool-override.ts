@@ -1,22 +1,36 @@
 /**
  * Tool Override Example - Demonstrates overriding built-in tools
+ * 工具覆盖示例 —— 演示覆盖内置工具
  *
  * Extensions can register tools with the same name as built-in tools to replace them.
+ * 扩展可以注册与内置工具同名的工具来替换它们。
  * This is useful for:
+ * 可用于以下场景：
  * - Adding logging or auditing to tool calls
+ * - 为工具调用添加日志记录或审计
  * - Implementing access control or sandboxing
+ * - 实现访问控制或沙箱隔离
  * - Routing tool calls to remote systems (e.g., pi-ssh-remote)
+ * - 将工具调用路由到远程系统（例如 pi-ssh-remote）
  * - Modifying tool behavior for specific workflows
+ * - 针对特定工作流修改工具行为
  *
  * This example overrides the `read` tool to:
+ * 本示例覆盖 `read` 工具，实现：
  * 1. Log all file access to a log file
+ * 1. 将所有文件访问记录到日志文件
  * 2. Block access to sensitive paths (e.g., .env files)
+ * 2. 阻止访问敏感路径（例如 .env 文件）
  * 3. Delegate to the original read implementation for allowed files
+ * 3. 对允许访问的文件，委托给原始的 read 实现
  *
  * Since no custom renderCall/renderResult are provided, the built-in renderer
+ * 由于未提供自定义的 renderCall/renderResult，将自动使用内置渲染器
  * is used automatically (syntax highlighting, line numbers, truncation warnings).
+ * （语法高亮、行号、截断警告）。
  *
  * Usage:
+ * 用法：
  *   pi -e ./tool-override.ts
  */
 
@@ -30,6 +44,7 @@ import { Type } from "typebox";
 const LOG_FILE = join(getAgentDir(), "read-access.log");
 
 // Paths that are blocked from reading
+// 禁止读取的路径模式
 const BLOCKED_PATTERNS = [
 	/\.env$/,
 	/\.env\..+$/,
@@ -56,6 +71,7 @@ async function logAccess(path: string, allowed: boolean, reason?: string) {
 		});
 	} catch {
 		// Ignore logging errors
+		// 忽略日志记录错误
 	}
 }
 
@@ -67,7 +83,7 @@ const readSchema = Type.Object({
 
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
-		name: "read", // Same name as built-in - this will override it
+		name: "read", // Same name as built-in - this will override it（与内置工具同名 —— 将覆盖它）
 		label: "read (audited)",
 		description:
 			"Read the contents of a file with access logging. Some sensitive paths (.env, secrets, credentials) are blocked.",
@@ -78,6 +94,7 @@ export default function (pi: ExtensionAPI) {
 			const absolutePath = resolve(ctx.cwd, path);
 
 			// Check if path is blocked
+			// 检查路径是否被禁止
 			if (isBlockedPath(absolutePath)) {
 				await logAccess(absolutePath, false, "matches blocked pattern");
 				return {
@@ -92,20 +109,24 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Log allowed access
+			// 记录允许的访问
 			await logAccess(absolutePath, true);
 
 			// Perform the actual read (simplified implementation)
+			// 执行实际读取（简化实现）
 			try {
 				await access(absolutePath, constants.R_OK);
 				const content = await readFile(absolutePath, "utf-8");
 				const lines = content.split("\n");
 
 				// Apply offset and limit
+				// 应用 offset 与 limit
 				const startLine = offset ? Math.max(0, offset - 1) : 0;
 				const endLine = limit ? startLine + limit : lines.length;
 				const selectedLines = lines.slice(startLine, endLine);
 
 				// Basic truncation (50KB limit)
+				// 基本截断（50KB 上限）
 				let text = selectedLines.join("\n");
 				const maxBytes = 50 * 1024;
 				if (Buffer.byteLength(text, "utf-8") > maxBytes) {
@@ -125,16 +146,19 @@ export default function (pi: ExtensionAPI) {
 		},
 
 		// No renderCall/renderResult - uses built-in renderer automatically
+		// 未提供 renderCall/renderResult —— 自动使用内置渲染器
 		// (syntax highlighting, line numbers, truncation warnings, etc.)
+		// （语法高亮、行号、截断警告等）
 	});
 
 	// Also register a command to view the access log
+	// 另外注册一个命令用于查看访问日志
 	pi.registerCommand("read-log", {
 		description: "View the file access log",
 		handler: async (_args, ctx) => {
 			try {
 				const log = readFileSync(LOG_FILE, "utf-8");
-				const lines = log.trim().split("\n").slice(-20); // Last 20 entries
+				const lines = log.trim().split("\n").slice(-20); // Last 20 entries（最近 20 条记录）
 				ctx.ui.notify(`Recent file access:\n${lines.join("\n")}`, "info");
 			} catch {
 				ctx.ui.notify("No access log found", "info");

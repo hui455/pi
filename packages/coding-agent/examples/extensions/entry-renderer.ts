@@ -1,11 +1,16 @@
 /**
  * Custom entry rendering example.
+ * 自定义条目渲染示例。
  *
  * Shows how to render durable extension data inside the chat without sending it
  * to the LLM. Custom entries are stored in the session via pi.appendEntry() and
  * rendered in interactive mode via pi.registerEntryRenderer().
+ * 展示如何在聊天中渲染持久化的扩展数据而不将其发送给 LLM。
+ * 自定义条目通过 pi.appendEntry() 存储在会话中，
+ * 并通过 pi.registerEntryRenderer() 在交互模式下渲染。
  *
  * Usage: /status-card [message]
+ * 用法：/status-card [message]
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";

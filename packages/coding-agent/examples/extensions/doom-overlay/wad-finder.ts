@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { gunzipSync } from "node:zlib";
 
 // Get the bundled WAD path (relative to this module)
+// 获取捆绑的 WAD 路径（相对于本模块）
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const BUNDLED_WAD = join(__dirname, "doom1.wad");
 const WAD_URL = "https://www.gamers.org/pub/idgames/idstuff/doom/doom-1.8.wad.gz";
@@ -18,11 +19,13 @@ export function findWadFile(customPath?: string): string | null {
 	}
 
 	// Check bundled WAD first
+	// 优先检查捆绑的 WAD
 	if (existsSync(BUNDLED_WAD)) {
 		return BUNDLED_WAD;
 	}
 
 	// Fall back to default paths
+	// 回退到默认路径
 	for (const p of DEFAULT_WAD_PATHS) {
 		const resolved = resolve(p.replace(/^~/, process.env.HOME || ""));
 		if (existsSync(resolved)) return resolved;
@@ -31,13 +34,18 @@ export function findWadFile(customPath?: string): string | null {
 	return null;
 }
 
-/** Download the shareware WAD if not present. Returns path or null on failure. */
+/**
+ * Download the shareware WAD if not present. Returns path or null on failure.
+ * 下载共享版 WAD（若尚未存在）。成功返回路径，失败返回 null。
+ */
 export async function ensureWadFile(): Promise<string | null> {
 	// Check if already exists
+	// 检查是否已存在
 	const existing = findWadFile();
 	if (existing) return existing;
 
 	// Download to bundled location
+	// 下载到捆绑位置
 	try {
 		const response = await fetch(WAD_URL);
 		if (!response.ok) {

@@ -1,14 +1,21 @@
 /**
  * Merge and Resolve
+ * 合并与解决冲突
  *
  * Keeps the working branch up to date with its upstream tracking ref.
+ * 让工作分支与其上游跟踪引用保持同步。
  * After each agent turn, fetches and merges. Clean merges complete
  * silently. When conflicts arise, the working tree is left dirty and
  * the agent receives a follow-up message listing each conflict block
  * with file, line range, and ours/theirs sections so it can resolve them.
+ * 每次智能体回合结束后，先 fetch 再 merge。干净的合并静默完成；
+ * 当出现冲突时，工作区保持脏状态，智能体会收到一条跟进消息，
+ * 其中列出每个冲突块的文件、行范围和 ours/theirs 区段，以便解决冲突。
  * Also re-sends unresolved conflicts from a previous incomplete merge.
+ * 同时也会重新发送上一次未完成合并中尚未解决的冲突。
  *
  * Start pi with this extension:
+ * 使用此扩展启动 pi：
  *   pi -e ./examples/extensions/git-merge-and-resolve.ts
  */
 import { createReadStream } from "node:fs";
@@ -23,7 +30,10 @@ interface ConflictBlock {
 	endLine: number;
 }
 
-/** Parse conflict markers from working tree files with unmerged paths. */
+/**
+ * Parse conflict markers from working tree files with unmerged paths.
+ * 解析工作区中未合并路径文件里的冲突标记。
+ */
 async function findConflicts(pi: ExtensionAPI, cwd: string): Promise<ConflictBlock[]> {
 	const { stdout, code } = await pi.exec("git", ["diff", "--name-only", "--diff-filter=U"]);
 	if (code !== 0 || !stdout.trim()) return [];
@@ -78,9 +88,11 @@ export default function (pi: ExtensionAPI) {
 		let ref = "MERGE_HEAD";
 
 		// If not already in a merge, attempt one
+		// 如果当前不在合并中，则尝试发起一次合并
 		const { code: mergeHeadCode } = await pi.exec("git", ["rev-parse", "MERGE_HEAD"]);
 		if (mergeHeadCode !== 0) {
 			// Only attempt a new merge if the working tree is clean
+			// 仅在工作区干净时才尝试新的合并
 			const { stdout: status } = await pi.exec("git", ["status", "--porcelain"]);
 			if (status.trim()) return;
 
@@ -107,6 +119,7 @@ export default function (pi: ExtensionAPI) {
 		}
 
 		// Either we just merged with conflicts, or we were already in an unfinished merge
+		// 要么刚发生了带冲突的合并，要么本来就处于未完成的合并状态
 		const conflicts = await findConflicts(pi, ctx.cwd);
 		if (conflicts.length === 0) return;
 

@@ -1,19 +1,30 @@
 /**
  * Sandbox Extension - OS-level sandboxing for bash commands
+ * 沙箱扩展 —— 对 bash 命令进行操作系统级沙箱隔离
  *
  * Uses @anthropic-ai/sandbox-runtime to enforce filesystem and network
+ * 使用 @anthropic-ai/sandbox-runtime 在操作系统层面（macOS 上的
  * restrictions on bash commands at the OS level (sandbox-exec on macOS,
+ * sandbox-exec、Linux 上的 bubblewrap）对 bash 命令强制实施文件系统
  * bubblewrap on Linux).
+ * 和网络限制。
  *
  * Note: this example intentionally overrides the built-in `bash` tool to show
+ * 注意：本示例故意覆盖内置的 `bash` 工具，以演示内置工具如何被
  * how built-in tools can be replaced. Alternatively, you could sandbox `bash`
+ * 替换。此外，你也可以在不替换工具的情况下，通过 `tool_call` 输入
  * via `tool_call` input mutation without replacing the tool.
+ * 改写来对 `bash` 进行沙箱化。
  *
  * Config files (merged, project takes precedence):
+ * 配置文件（合并使用，项目级优先）：
  * - ~/.pi/agent/extensions/sandbox.json (global)
+ * - ~/.pi/agent/extensions/sandbox.json（全局）
  * - <cwd>/.pi/sandbox.json (project-local)
+ * - <cwd>/.pi/sandbox.json（项目级）
  *
  * Example .pi/sandbox.json:
+ * 示例 .pi/sandbox.json：
  * ```json
  * {
  *   "enabled": true,
@@ -30,15 +41,23 @@
  * ```
  *
  * Usage:
+ * 用法：
  * - `pi -e ./sandbox` - sandbox enabled with default/config settings
+ * - `pi -e ./sandbox` —— 使用默认/配置文件设置启用沙箱
  * - `pi -e ./sandbox --no-sandbox` - disable sandboxing
+ * - `pi -e ./sandbox --no-sandbox` —— 禁用沙箱
  * - `/sandbox` - show current sandbox configuration
+ * - `/sandbox` —— 显示当前沙箱配置
  *
  * Setup:
+ * 安装：
  * 1. Copy sandbox/ directory to ~/.pi/agent/extensions/
+ * 1. 将 sandbox/ 目录复制到 ~/.pi/agent/extensions/
  * 2. Run `npm install` in ~/.pi/agent/extensions/sandbox/
+ * 2. 在 ~/.pi/agent/extensions/sandbox/ 中运行 `npm install`
  *
  * Linux also requires: bubblewrap, socat, ripgrep
+ * Linux 还依赖：bubblewrap、socat、ripgrep
  */
 
 import { spawn } from "node:child_process";
@@ -290,6 +309,7 @@ export default function (pi: ExtensionAPI) {
 				await SandboxManager.reset();
 			} catch {
 				// Ignore cleanup errors
+				// 忽略清理错误
 			}
 		}
 	});

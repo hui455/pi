@@ -1,7 +1,10 @@
 /**
  * Question Tool - Single question with options
+ * 提问工具——带选项的单个问题
  * Full custom UI: options list + inline editor for "Type something..."
+ * 完全自定义界面：选项列表 + 用于“输入其他内容……”的内联编辑器
  * Escape in editor returns to options, Escape in options cancels
+ * 在编辑器中按 Esc 返回选项列表，在选项中按 Esc 取消
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -31,6 +34,7 @@ interface QuestionDetails {
 }
 
 // Options with labels and optional descriptions
+// 带标签和可选描述的选项
 const OptionSchema = Type.Object({
 	label: Type.String({ description: "Display label for the option" }),
 	description: Type.Optional(Type.String({ description: "Optional description shown below label" })),
@@ -182,6 +186,7 @@ export default function question(pi: ExtensionAPI) {
 							addWrappedWithPrefix(prefix, theme.fg(color, label));
 
 							// Show description if present
+							// 若有描述则显示
 							if (opt.description) {
 								addWrappedWithPrefix("     ", theme.fg("muted", opt.description));
 							}
@@ -218,6 +223,7 @@ export default function question(pi: ExtensionAPI) {
 			);
 
 			// Build simple options list for details
+			// 为 details 构建简化的选项列表
 			const simpleOptions = params.options.map((o) => o.label);
 
 			if (!result) {

@@ -1,11 +1,16 @@
 /**
  * Custom Footer Extension - demonstrates ctx.ui.setFooter()
+ * 自定义页脚扩展 —— 演示 ctx.ui.setFooter()
  *
  * footerData exposes data not otherwise accessible:
+ * footerData 暴露了其他方式无法访问的数据：
  * - getGitBranch(): current git branch
+ * - getGitBranch()：当前 git 分支
  * - getExtensionStatuses(): texts from ctx.ui.setStatus()
+ * - getExtensionStatuses()：来自 ctx.ui.setStatus() 的文本
  *
  * Token stats come from ctx.sessionManager/ctx.model (already accessible).
+ * Token 统计来自 ctx.sessionManager/ctx.model（已可直接访问）。
  */
 
 import type { AssistantMessage } from "@earendil-works/pi-ai";
@@ -29,6 +34,7 @@ export default function (pi: ExtensionAPI) {
 						invalidate() {},
 						render(width: number): string[] {
 							// Compute tokens from ctx (already accessible to extensions)
+							// 从 ctx 计算 token 数（扩展已可直接访问）
 							let input = 0,
 								output = 0,
 								cost = 0;
@@ -42,6 +48,7 @@ export default function (pi: ExtensionAPI) {
 							}
 
 							// Get git branch (not otherwise accessible)
+							// 获取 git 分支（其他方式无法访问）
 							const branch = footerData.getGitBranch();
 							const fmt = (n: number) => (n < 1000 ? `${n}` : `${(n / 1000).toFixed(1)}k`);
 

@@ -1,13 +1,19 @@
 /**
  * Pirate Extension
+ * 海盗扩展
  *
  * Demonstrates modifying the system prompt in before_agent_start to dynamically
  * change agent behavior based on extension state.
+ * 演示在 before_agent_start 中修改系统提示词，从而根据扩展状态动态改变智能体行为。
  *
  * Usage:
+ * 用法：
  * 1. Copy this file to ~/.pi/agent/extensions/ or your project's .pi/extensions/
+ *    将本文件复制到 ~/.pi/agent/extensions/ 或项目内的 .pi/extensions/
  * 2. Use /pirate to toggle pirate mode
+ *    使用 /pirate 切换海盗模式
  * 3. When enabled, the agent will respond like a pirate
+ *    启用后，智能体将像海盗一样说话
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -16,6 +22,7 @@ export default function pirateExtension(pi: ExtensionAPI) {
 	let pirateMode = false;
 
 	// Register /pirate command to toggle pirate mode
+	// 注册 /pirate 命令以切换海盗模式
 	pi.registerCommand("pirate", {
 		description: "Toggle pirate mode (agent speaks like a pirate)",
 		handler: async (_args, ctx) => {
@@ -25,6 +32,7 @@ export default function pirateExtension(pi: ExtensionAPI) {
 	});
 
 	// Append to system prompt when pirate mode is enabled
+	// 启用海盗模式时，向系统提示词追加内容
 	pi.on("before_agent_start", async (event) => {
 		if (pirateMode) {
 			return {

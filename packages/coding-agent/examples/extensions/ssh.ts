@@ -1,16 +1,23 @@
 /**
  * SSH Remote Execution Example
+ * SSH 远程执行示例
  *
  * Demonstrates delegating tool operations to a remote machine via SSH.
+ * 演示通过 SSH 将工具操作委托给远程机器执行。
  * When --ssh is provided, read/write/edit/bash run on the remote.
+ * 当提供 --ssh 参数时，read/write/edit/bash 工具将在远程机器上运行。
  *
  * Usage:
+ * 用法：
  *   pi -e ./ssh.ts --ssh user@host
  *   pi -e ./ssh.ts --ssh user@host:/remote/path
  *
  * Requirements:
+ * 前置要求：
  *   - SSH key-based auth (no password prompts)
+ *   - 基于 SSH 密钥的认证（无密码提示）
  *   - bash on remote
+ *   - 远程机器上需有 bash
  */
 
 import { spawn } from "node:child_process";
@@ -121,6 +128,7 @@ export default function (pi: ExtensionAPI) {
 	const localBash = createBashTool(localCwd);
 
 	// Resolved lazily on session_start (CLI flags not available during factory)
+	// 延迟到 session_start 时解析（工厂函数执行期间无法获取 CLI 参数）
 	let resolvedSsh: { remote: string; remoteCwd: string } | null = null;
 
 	const getSsh = () => resolvedSsh;
@@ -183,6 +191,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		// Resolve SSH config now that CLI flags are available
+		// 现在 CLI 参数已可用，解析 SSH 配置
 		const arg = pi.getFlag("ssh") as string | undefined;
 		if (arg) {
 			if (arg.includes(":")) {
@@ -190,6 +199,7 @@ export default function (pi: ExtensionAPI) {
 				resolvedSsh = { remote, remoteCwd: path };
 			} else {
 				// No path given, evaluate pwd on remote
+				// 未提供路径，在远程机器上执行 pwd 获取路径
 				const remote = arg;
 				const pwd = (await sshExec(remote, "pwd")).toString().trim();
 				resolvedSsh = { remote, remoteCwd: pwd };
@@ -200,13 +210,15 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Handle user ! commands via SSH
+	// 通过 SSH 处理用户的 ! 命令
 	pi.on("user_bash", (_event) => {
 		const ssh = getSsh();
-		if (!ssh) return; // No SSH, use local execution
+		if (!ssh) return; // No SSH, use local execution（未配置 SSH，使用本地执行）
 		return { operations: createRemoteBashOps(ssh.remote, ssh.remoteCwd, localCwd) };
 	});
 
 	// Replace local cwd with remote cwd in system prompt
+	// 在系统提示词中将本地 cwd 替换为远程 cwd
 	pi.on("before_agent_start", async (event) => {
 		const ssh = getSsh();
 		if (ssh) {

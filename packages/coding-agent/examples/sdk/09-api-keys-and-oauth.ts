@@ -1,7 +1,9 @@
 /**
  * API Keys and OAuth
+ * API 密钥与 OAuth
  *
  * Configure provider auth through ModelRuntime.
+ * 通过 ModelRuntime 配置提供商认证。
  */
 
 import { createAgentSession, ModelRuntime, SessionManager } from "@earendil-works/pi-coding-agent";

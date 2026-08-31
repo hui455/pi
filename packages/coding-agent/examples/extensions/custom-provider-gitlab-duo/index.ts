@@ -1,12 +1,17 @@
 /**
  * GitLab Duo Provider Extension
+ * GitLab Duo Provider 扩展
  *
  * Provides access to GitLab Duo AI models (Claude and GPT) through GitLab's AI Gateway.
+ * 通过 GitLab 的 AI Gateway 访问 GitLab Duo AI 模型（Claude 和 GPT）。
  * Delegates to pi-ai's built-in Anthropic and OpenAI streaming implementations.
+ * 委托给 pi-ai 内置的 Anthropic 和 OpenAI 流式实现。
  *
  * Usage:
+ * 用法：
  *   pi -e ./packages/coding-agent/examples/extensions/custom-provider-gitlab-duo
  *   # Then /login gitlab-duo, or set GITLAB_TOKEN=glpat-...
+ *   # 然后执行 /login gitlab-duo，或设置 GITLAB_TOKEN=glpat-...
  */
 
 import {
@@ -26,6 +31,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // =============================================================================
 // Constants
+// 常量
 // =============================================================================
 
 const GITLAB_COM_URL = "https://gitlab.com";
@@ -40,6 +46,7 @@ const DIRECT_ACCESS_TTL = 25 * 60 * 1000;
 
 // =============================================================================
 // Models - exported for use by tests
+// 模型定义 —— 导出以供测试使用
 // =============================================================================
 
 type Backend = "anthropic" | "openai";
@@ -59,6 +66,7 @@ interface GitLabModel {
 
 export const MODELS: GitLabModel[] = [
 	// Anthropic
+	// Anthropic 模型
 	{
 		id: "claude-opus-4-8",
 		name: "Claude Opus 4.8",
@@ -120,6 +128,7 @@ export const MODELS: GitLabModel[] = [
 		maxTokens: 8192,
 	},
 	// OpenAI (all use Responses API)
+	// OpenAI 模型（全部使用 Responses API）
 	{
 		id: "gpt-5.5-2026-04-23",
 		name: "GPT-5.5",
@@ -170,6 +179,7 @@ const MODEL_MAP = new Map(MODELS.map((m) => [m.id, m]));
 
 // =============================================================================
 // Direct Access Token Cache
+// 直连访问令牌缓存
 // =============================================================================
 
 interface DirectAccessToken {
@@ -213,6 +223,7 @@ function invalidateDirectAccessToken() {
 
 // =============================================================================
 // OAuth
+// OAuth 认证
 // =============================================================================
 
 async function generatePKCE(): Promise<{ verifier: string; challenge: string }> {
@@ -302,6 +313,7 @@ async function refreshGitLabToken(credentials: OAuthCredentials, signal: AbortSi
 
 // =============================================================================
 // Stream Function
+// 流式函数
 // =============================================================================
 
 export function streamGitLabDuo(
@@ -377,6 +389,7 @@ export function streamGitLabDuo(
 
 // =============================================================================
 // Extension Entry Point
+// 扩展入口
 // =============================================================================
 
 export default function (pi: ExtensionAPI) {

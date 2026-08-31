@@ -1,6 +1,8 @@
 /**
  * Space Invaders game extension - play with /invaders command
+ * 太空入侵者游戏扩展——用 /invaders 命令游玩
  * Uses Kitty keyboard protocol for smooth movement (press/release detection)
+ * 使用 Kitty 键盘协议实现流畅移动（按下/松开检测）
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -17,17 +19,17 @@ const ALIEN_START_Y = 2;
 type Point = { x: number; y: number };
 
 interface Bullet extends Point {
-	direction: -1 | 1; // -1 = up (player), 1 = down (alien)
+	direction: -1 | 1; // -1 = up (player), 1 = down (alien)（-1 = 向上（玩家），1 = 向下（外星人））
 }
 
 interface Alien extends Point {
-	type: number; // 0, 1, 2 for different alien types
+	type: number; // 0, 1, 2 for different alien types（0、1、2 代表不同的外星人类型）
 	alive: boolean;
 }
 
 interface Shield {
 	x: number;
-	segments: boolean[][]; // 4x3 grid of destructible segments
+	segments: boolean[][]; // 4x3 grid of destructible segments（4x3 的可破坏段网格）
 }
 
 interface GameState {
@@ -120,6 +122,7 @@ class SpaceInvadersComponent {
 	private playerMoveCounter = 0;
 
 	// Opt-in to key release events for smooth movement
+	// 选择接收按键松开事件，以实现流畅移动
 	wantsKeyRelease = true;
 
 	constructor(
@@ -153,6 +156,7 @@ class SpaceInvadersComponent {
 
 	private tick(): void {
 		// Player movement (smooth, every other tick)
+		// 玩家移动（平滑，每隔一个 tick 移动一次）
 		this.playerMoveCounter++;
 		if (this.playerMoveCounter >= 2) {
 			this.playerMoveCounter = 0;
@@ -165,9 +169,11 @@ class SpaceInvadersComponent {
 		}
 
 		// Fire cooldown
+		// 射击冷却
 		if (this.fireCooldown > 0) this.fireCooldown--;
 
 		// Player shooting
+		// 玩家射击
 		if (this.keys.fire && this.fireCooldown === 0) {
 			const playerBullets = this.state.bullets.filter((b) => b.direction === -1);
 			if (playerBullets.length < 2) {
@@ -177,12 +183,14 @@ class SpaceInvadersComponent {
 		}
 
 		// Move bullets
+		// 移动子弹
 		this.state.bullets = this.state.bullets.filter((bullet) => {
 			bullet.y += bullet.direction;
 			return bullet.y >= 0 && bullet.y < GAME_HEIGHT;
 		});
 
 		// Alien movement
+		// 外星人移动
 		this.state.alienMoveCounter++;
 		if (this.state.alienMoveCounter >= this.state.alienMoveDelay) {
 			this.state.alienMoveCounter = 0;
@@ -190,6 +198,7 @@ class SpaceInvadersComponent {
 		}
 
 		// Alien shooting
+		// 外星人射击
 		this.state.alienShootCounter++;
 		if (this.state.alienShootCounter >= 30) {
 			this.state.alienShootCounter = 0;
@@ -197,9 +206,11 @@ class SpaceInvadersComponent {
 		}
 
 		// Collision detection
+		// 碰撞检测
 		this.checkCollisions();
 
 		// Check victory
+		// 检查是否获胜
 		if (this.state.aliens.every((a) => !a.alive)) {
 			this.state.victory = true;
 		}
@@ -211,6 +222,7 @@ class SpaceInvadersComponent {
 
 		if (this.state.alienDropping) {
 			// Drop down
+			// 向下移动
 			for (const alien of aliveAliens) {
 				alien.y++;
 				if (alien.y >= PLAYER_Y - 1) {
@@ -221,6 +233,7 @@ class SpaceInvadersComponent {
 			this.state.alienDropping = false;
 		} else {
 			// Check if we need to change direction
+			// 检查是否需要改变方向
 			const minX = Math.min(...aliveAliens.map((a) => a.x));
 			const maxX = Math.max(...aliveAliens.map((a) => a.x));
 
@@ -232,6 +245,7 @@ class SpaceInvadersComponent {
 				this.state.alienDropping = true;
 			} else {
 				// Move horizontally
+				// 水平移动
 				for (const alien of aliveAliens) {
 					alien.x += this.state.alienDirection;
 				}
@@ -239,6 +253,7 @@ class SpaceInvadersComponent {
 		}
 
 		// Speed up as fewer aliens remain
+		// 剩余外星人越少，速度越快
 		const aliveCount = aliveAliens.length;
 		if (aliveCount <= 5) {
 			this.state.alienMoveDelay = 1;
@@ -254,6 +269,7 @@ class SpaceInvadersComponent {
 		if (aliveAliens.length === 0) return;
 
 		// Find bottom-most alien in each column
+		// 找出每一列中最下方的外星人
 		const columns = new Map<number, Alien>();
 		for (const alien of aliveAliens) {
 			const existing = columns.get(alien.x);
@@ -263,6 +279,7 @@ class SpaceInvadersComponent {
 		}
 
 		// Random column shoots
+		// 随机一列开火
 		const shooters = Array.from(columns.values());
 		if (shooters.length > 0 && this.state.bullets.filter((b) => b.direction === 1).length < 3) {
 			const shooter = shooters[Math.floor(Math.random() * shooters.length)];
@@ -275,6 +292,7 @@ class SpaceInvadersComponent {
 
 		for (const bullet of this.state.bullets) {
 			// Player bullets hitting aliens
+			// 玩家子弹击中外星人
 			if (bullet.direction === -1) {
 				for (const alien of this.state.aliens) {
 					if (alien.alive && Math.abs(bullet.x - alien.x) <= 1 && bullet.y === alien.y) {
@@ -291,6 +309,7 @@ class SpaceInvadersComponent {
 			}
 
 			// Alien bullets hitting player
+			// 外星人子弹击中玩家
 			if (bullet.direction === 1) {
 				if (Math.abs(bullet.x - this.state.player.x) <= 1 && bullet.y === PLAYER_Y) {
 					bulletsToRemove.add(bullet);
@@ -302,6 +321,7 @@ class SpaceInvadersComponent {
 			}
 
 			// Bullets hitting shields
+			// 子弹击中护盾
 			for (const shield of this.state.shields) {
 				const relX = bullet.x - shield.x;
 				const relY = bullet.y - (PLAYER_Y - 5);
@@ -321,6 +341,7 @@ class SpaceInvadersComponent {
 		const released = isKeyRelease(data);
 
 		// Pause handling
+		// 暂停处理
 		if (this.paused && !released) {
 			if (matchesKey(data, Key.escape) || data === "q" || data === "Q") {
 				this.dispose();
@@ -333,6 +354,7 @@ class SpaceInvadersComponent {
 		}
 
 		// ESC to pause and save
+		// ESC 暂停并保存
 		if (!released && matchesKey(data, Key.escape)) {
 			this.dispose();
 			this.onSave(this.state);
@@ -341,6 +363,7 @@ class SpaceInvadersComponent {
 		}
 
 		// Q to quit without saving
+		// Q 退出且不保存
 		if (!released && (data === "q" || data === "Q")) {
 			this.dispose();
 			this.onSave(null);
@@ -349,6 +372,7 @@ class SpaceInvadersComponent {
 		}
 
 		// Movement keys (track press/release state)
+		// 移动按键（记录按下/松开状态）
 		if (matchesKey(data, Key.left) || data === "a" || data === "A" || matchesKey(data, "a")) {
 			this.keys.left = !released;
 		}
@@ -357,11 +381,13 @@ class SpaceInvadersComponent {
 		}
 
 		// Fire key
+		// 开火键
 		if (matchesKey(data, Key.space) || data === " " || data === "f" || data === "F" || matchesKey(data, "f")) {
 			this.keys.fire = !released;
 		}
 
 		// Restart on game over or victory
+		// 游戏结束或获胜后重开
 		if (!released && (this.state.gameOver || this.state.victory)) {
 			if (data === "r" || data === "R" || data === " ") {
 				const highScore = this.state.highScore;
@@ -387,6 +413,7 @@ class SpaceInvadersComponent {
 		const lines: string[] = [];
 
 		// Colors
+		// 颜色
 		const dim = (s: string) => `\x1b[2m${s}\x1b[22m`;
 		const green = (s: string) => `\x1b[32m${s}\x1b[0m`;
 		const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
@@ -405,9 +432,11 @@ class SpaceInvadersComponent {
 		};
 
 		// Top border
+		// 上边框
 		lines.push(this.padLine(dim(` ╭${"─".repeat(boxWidth)}╮`), width));
 
 		// Header
+		// 标题栏
 		const title = `${bold(green("SPACE INVADERS"))}`;
 		const scoreText = `Score: ${bold(yellow(String(this.state.score)))}`;
 		const highText = `Hi: ${bold(yellow(String(this.state.highScore)))}`;
@@ -417,9 +446,11 @@ class SpaceInvadersComponent {
 		lines.push(this.padLine(boxLine(header), width));
 
 		// Separator
+		// 分隔线
 		lines.push(this.padLine(dim(` ├${"─".repeat(boxWidth)}┤`), width));
 
 		// Game grid
+		// 游戏网格
 		for (let y = 0; y < GAME_HEIGHT; y++) {
 			let row = "";
 			for (let x = 0; x < GAME_WIDTH; x++) {
@@ -427,6 +458,7 @@ class SpaceInvadersComponent {
 				let colored = false;
 
 				// Check aliens
+				// 检查外星人
 				for (const alien of this.state.aliens) {
 					if (alien.alive && alien.y === y && Math.abs(alien.x - x) <= 1) {
 						const sprites = [
@@ -442,6 +474,7 @@ class SpaceInvadersComponent {
 				}
 
 				// Check shields
+				// 检查护盾
 				if (!colored) {
 					for (const shield of this.state.shields) {
 						const relX = x - shield.x;
@@ -457,6 +490,7 @@ class SpaceInvadersComponent {
 				}
 
 				// Check player
+				// 检查玩家
 				if (!colored && y === PLAYER_Y && Math.abs(x - this.state.player.x) <= 1) {
 					if (x === this.state.player.x) {
 						char = white("▲");
@@ -467,6 +501,7 @@ class SpaceInvadersComponent {
 				}
 
 				// Check bullets
+				// 检查子弹
 				if (!colored) {
 					for (const bullet of this.state.bullets) {
 						if (bullet.x === x && bullet.y === y) {
@@ -483,9 +518,11 @@ class SpaceInvadersComponent {
 		}
 
 		// Separator
+		// 分隔线
 		lines.push(this.padLine(dim(` ├${"─".repeat(boxWidth)}┤`), width));
 
 		// Footer
+		// 底栏
 		let footer: string;
 		if (this.paused) {
 			footer = `${yellow(bold("PAUSED"))} Press any key to continue, ${bold("Q")} to quit`;
@@ -499,6 +536,7 @@ class SpaceInvadersComponent {
 		lines.push(this.padLine(boxLine(footer), width));
 
 		// Bottom border
+		// 下边框
 		lines.push(this.padLine(dim(` ╰${"─".repeat(boxWidth)}╯`), width));
 
 		this.cachedLines = lines;
@@ -535,6 +573,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Load saved state from session
+			// 从会话中加载存档
 			const entries = ctx.sessionManager.getEntries();
 			let savedState: GameState | undefined;
 			for (let i = entries.length - 1; i >= 0; i--) {

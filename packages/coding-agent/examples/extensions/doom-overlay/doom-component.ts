@@ -1,8 +1,11 @@
 /**
  * DOOM Component for overlay mode
+ * 覆盖层模式的 DOOM 组件
  *
  * Renders DOOM frames using half-block characters (▀) with 24-bit color.
+ * 使用半块字符（▀）和 24 位真彩色渲染 DOOM 帧。
  * Height is calculated from width to maintain DOOM's aspect ratio.
+ * 高度由宽度计算得出，以保持 DOOM 的宽高比。
  */
 
 import type { Component } from "@earendil-works/pi-tui";
@@ -51,6 +54,7 @@ export class DoomOverlayComponent implements Component {
 	private onExit: () => void;
 
 	// Opt-in to key release events for smooth movement
+	// 选择接收按键释放事件，以实现平滑移动
 	wantsKeyRelease = true;
 
 	constructor(tui: TUI, engine: DoomEngine, onExit: () => void, resume = false) {
@@ -59,6 +63,7 @@ export class DoomOverlayComponent implements Component {
 		this.onExit = onExit;
 
 		// Unpause if resuming
+		// 如果是恢复运行，则取消暂停
 		if (resume) {
 			this.engine.pushKey(true, DoomKeys.KEY_PAUSE);
 			this.engine.pushKey(false, DoomKeys.KEY_PAUSE);
@@ -74,6 +79,7 @@ export class DoomOverlayComponent implements Component {
 				this.tui.requestRender();
 			} catch {
 				// WASM error (e.g., exit via DOOM menu) - treat as quit
+				// WASM 错误（例如通过 DOOM 菜单退出）—— 视为退出
 				this.dispose();
 				this.onExit();
 			}
@@ -82,8 +88,10 @@ export class DoomOverlayComponent implements Component {
 
 	handleInput(data: string): void {
 		// Q to pause and exit (but not on release)
+		// 按 Q 暂停并退出（但松开时不触发）
 		if (!isKeyRelease(data) && (data === "q" || data === "Q")) {
 			// Send DOOM's pause key before exiting
+			// 退出前先发送 DOOM 的暂停键
 			this.engine.pushKey(true, DoomKeys.KEY_PAUSE);
 			this.engine.pushKey(false, DoomKeys.KEY_PAUSE);
 			this.dispose();
@@ -103,9 +111,13 @@ export class DoomOverlayComponent implements Component {
 
 	render(width: number): string[] {
 		// DOOM renders at 640x400 (1.6:1 ratio)
+		// DOOM 以 640x400 渲染（比例 1.6:1）
 		// With half-block characters, each terminal row = 2 pixels
+		// 使用半块字符时，终端每一行 = 2 像素
 		// So effective ratio is 640:200 = 3.2:1 (width:height in terminal cells)
+		// 因此有效比例是 640:200 = 3.2:1（终端单元格中的宽:高）
 		// Add 1 row for footer
+		// 额外留 1 行给页脚
 		const ASPECT_RATIO = 3.2;
 		const MIN_HEIGHT = 10;
 		const height = Math.max(MIN_HEIGHT, Math.floor(width / ASPECT_RATIO));
@@ -114,6 +126,7 @@ export class DoomOverlayComponent implements Component {
 		const lines = renderHalfBlock(rgba, this.engine.width, this.engine.height, width, height);
 
 		// Footer
+		// 页脚
 		const footer = " DOOM | Q=Pause | WASD=Move | Shift+WASD=Run | Space=Use | F=Fire | 1-7=Weapons";
 		const truncatedFooter = footer.length > width ? footer.slice(0, width) : footer;
 		lines.push(`\x1b[2m${truncatedFooter}\x1b[0m`);

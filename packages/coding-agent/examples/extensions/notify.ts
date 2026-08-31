@@ -1,11 +1,17 @@
 /**
  * Pi Notify Extension
+ * Pi 通知扩展
  *
  * Sends a native terminal notification when Pi agent is done and waiting for input.
+ * 当 Pi 智能体完成工作并等待输入时，发送一条原生终端通知。
  * Supports multiple terminal protocols:
+ * 支持多种终端协议：
  * - OSC 777: Ghostty, iTerm2, WezTerm, rxvt-unicode
+ * - OSC 777：Ghostty、iTerm2、WezTerm、rxvt-unicode
  * - OSC 99: Kitty
+ * - OSC 99：Kitty
  * - Windows toast: Windows Terminal (WSL)
+ * - Windows toast：Windows Terminal（WSL）
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -29,6 +35,7 @@ function notifyOSC777(title: string, body: string): void {
 
 function notifyOSC99(title: string, body: string): void {
 	// Kitty OSC 99: i=notification id, d=0 means not done yet, p=body for second part
+	// Kitty OSC 99：i=通知 id，d=0 表示尚未完成，p=body 用于第二部分
 	process.stdout.write(`\x1b]99;i=1:d=0;${title}\x1b\\`);
 	process.stdout.write(`\x1b]99;i=1:p=body;${body}\x1b\\`);
 }

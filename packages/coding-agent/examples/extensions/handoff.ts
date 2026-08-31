@@ -1,15 +1,20 @@
 /**
  * Handoff extension - transfer context to a new focused session
+ * 交接（Handoff）扩展 —— 把上下文转移到一个新的专注会话
  *
  * Instead of compacting (which is lossy), handoff extracts what matters
  * for your next task and creates a new session with a generated prompt.
+ * 交接不采用压缩（有损）的方式，而是提取对下一任务真正重要的内容，
+ * 并用生成的提示词创建一个新会话。
  *
  * Usage:
+ * 用法：
  *   /handoff now implement this for teams as well
  *   /handoff execute phase one of the plan
  *   /handoff check other places that need this fix
  *
  * The generated prompt appears as a draft in the editor for review/editing.
+ * 生成的提示词会以草稿形式出现在编辑器中，供你审阅和修改。
  */
 
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
@@ -98,7 +103,9 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Gather conversation context from current branch. If the branch was compacted,
+			// 收集当前分支的对话上下文。如果分支被压缩过，
 			// include the compaction summary plus entries from firstKeptEntryId onward.
+			// 则包含压缩摘要以及从 firstKeptEntryId 开始的条目。
 			const messages = getHandoffMessages(ctx.sessionManager.getBranch());
 
 			if (messages.length === 0) {
@@ -107,11 +114,13 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Convert to LLM format and serialize
+			// 转换为 LLM 格式并序列化
 			const llmMessages = convertToLlm(messages);
 			const conversationText = serializeConversation(llmMessages);
 			const currentSessionFile = ctx.sessionManager.getSessionFile();
 
 			// Generate the handoff prompt with loader UI
+			// 用带加载动画的 UI 生成交接提示词
 			const result = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
 				const loader = new BorderedLoader(tui, theme, `Generating handoff prompt...`);
 				loader.onAbort = () => done(null);
@@ -164,6 +173,7 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			// Let user edit the generated prompt
+			// 让用户编辑生成的提示词
 			const editedPrompt = await ctx.ui.editor("Edit handoff prompt", result);
 
 			if (editedPrompt === undefined) {
@@ -174,6 +184,8 @@ export default function (pi: ExtensionAPI) {
 			// Create new session with parent tracking. Use the replacement-session
 			// context for post-switch UI work; the original ctx is stale after a
 			// successful session replacement.
+			// 创建带父会话追踪的新会话。切换后使用替换会话的上下文做 UI 工作；
+			// 会话替换成功后，原来的 ctx 已失效。
 			const newSessionResult = await ctx.newSession({
 				parentSession: currentSessionFile,
 				withSession: async (replacementCtx) => {

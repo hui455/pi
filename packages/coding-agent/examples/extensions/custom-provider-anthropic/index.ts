@@ -1,24 +1,36 @@
 /**
  * Custom Provider Example
+ * 自定义 Provider 示例
  *
  * Demonstrates registering a custom provider with:
+ * 演示如何注册一个自定义 Provider，包含：
  * - Custom API identifier ("custom-anthropic-api")
+ * - 自定义 API 标识符（"custom-anthropic-api"）
  * - Custom streamSimple implementation
+ * - 自定义 streamSimple 实现
  * - OAuth support for /login
+ * - 支持 /login 的 OAuth 认证
  * - API key support via environment variable
+ * - 通过环境变量支持 API key
  * - Two model definitions
+ * - 两个模型定义
  *
  * Usage:
+ * 用法：
  *   # First install dependencies
+ *   # 首先安装依赖
  *   cd packages/coding-agent/examples/extensions/custom-provider && npm install
  *
  *   # With OAuth (run /login custom-anthropic first)
+ *   # 使用 OAuth（先运行 /login custom-anthropic）
  *   pi -e ./packages/coding-agent/examples/extensions/custom-provider
  *
  *   # With API key
+ *   # 使用 API key
  *   CUSTOM_ANTHROPIC_API_KEY=sk-ant-... pi -e ./packages/coding-agent/examples/extensions/custom-provider
  *
  * Then use /model to select custom-anthropic/claude-sonnet-4-5
+ * 然后使用 /model 选择 custom-anthropic/claude-sonnet-4-5
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -47,6 +59,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // =============================================================================
 // OAuth implementation adapted for the legacy extension compatibility interface.
+// 为旧版扩展兼容接口适配的 OAuth 实现
 // =============================================================================
 
 const decode = (s: string) => atob(s);
@@ -155,9 +168,11 @@ async function refreshAnthropicToken(credentials: OAuthCredentials, signal: Abor
 
 // =============================================================================
 // Streaming Implementation (simplified from packages/ai/src/api/anthropic-messages.ts)
+// 流式实现（从 packages/ai/src/api/anthropic-messages.ts 简化而来）
 // =============================================================================
 
 // Claude Code tool names for OAuth stealth mode
+// Claude Code 工具名（用于 OAuth 隐身模式）
 const claudeCodeTools = [
 	"Read",
 	"Write",
@@ -292,6 +307,7 @@ function convertMessages(messages: Message[], isOAuth: boolean, _tools?: Tool[])
 	}
 
 	// Add cache control to last user message
+	// 为最后一条 user 消息添加缓存控制
 	if (params.length > 0) {
 		const last = params[params.length - 1];
 		if (last.role === "user" && Array.isArray(last.content)) {
@@ -363,6 +379,7 @@ function streamCustomAnthropic(
 			const isOAuth = isOAuthToken(apiKey);
 
 			// Configure client based on auth type
+			// 根据认证类型配置客户端
 			const betaFeatures = ["fine-grained-tool-streaming-2025-05-14", "interleaved-thinking-2025-05-14"];
 			const clientOptions: any = {
 				baseURL: model.baseUrl,
@@ -391,6 +408,7 @@ function streamCustomAnthropic(
 			const client = new Anthropic(clientOptions);
 
 			// Build request params
+			// 构建请求参数
 			const params: MessageCreateParamsStreaming = {
 				model: model.id,
 				messages: convertMessages(context.messages, isOAuth, context.tools),
@@ -399,6 +417,7 @@ function streamCustomAnthropic(
 			};
 
 			// System prompt with Claude Code identity for OAuth
+			// 使用 Claude Code 身份的 OAuth 系统提示词
 			if (isOAuth) {
 				params.system = [
 					{
@@ -429,6 +448,7 @@ function streamCustomAnthropic(
 			}
 
 			// Handle thinking/reasoning
+			// 处理思考/推理
 			if (options?.reasoning && model.reasoning) {
 				const defaultBudgets: Record<string, number> = {
 					minimal: 1024,
@@ -570,6 +590,7 @@ function streamCustomAnthropic(
 
 // =============================================================================
 // Extension Entry Point
+// 扩展入口
 // =============================================================================
 
 export default function (pi: ExtensionAPI) {

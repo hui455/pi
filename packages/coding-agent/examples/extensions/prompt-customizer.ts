@@ -1,23 +1,32 @@
 /**
  * Prompt Customizer Extension
+ * 提示词定制扩展
  *
  * Demonstrates using systemPromptOptions to make informed, context-aware
  * modifications to the system prompt without re-discovering resources.
+ * 演示利用 systemPromptOptions 对系统提示词进行有依据的、上下文感知的修改，
+ * 而无需重新发现资源。
  *
  * This extension adds tool-specific guidance based on what tools and skills
  * are currently active, respecting whatever the user has configured.
+ * 该扩展根据当前激活的工具和技能添加针对性指导，并尊重用户已有的配置。
  *
  * Usage:
+ * 用法：
  * 1. Copy this file to ~/.pi/agent/extensions/ or your project's .pi/extensions/
+ *    将本文件复制到 ~/.pi/agent/extensions/ 或项目内的 .pi/extensions/
  * 2. Use the extension — it automatically adapts to your active tools and skills
+ *    使用该扩展即可——它会自动适配当前激活的工具和技能
  */
 
 import type { BuildSystemPromptOptions, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 /**
  * Adds tool-specific guidance that adapts to the active tool set.
+ * 添加适配当前激活工具集的工具指导。
  * Instead of appending one-size-fits-all instructions, this reads what's
  * actually loaded and tailors the guidance accordingly.
+ * 与其追加千篇一律的指令，不如读取实际已加载的内容，并据此定制指导。
  */
 function addToolGuidance(options: BuildSystemPromptOptions, basePrompt: string): string {
 	const hasTool = (name: string) => options.selectedTools?.includes(name) ?? false;
@@ -64,8 +73,11 @@ ${parts.join("\n")}
 
 /**
  * Merges extension instructions with user-provided append prompts.
+ * 将扩展指令与用户提供的追加提示词合并。
  * This respects whatever the user configured via --append-system-prompt
  * flags or files, rather than duplicating that work.
+ * 这尊重用户通过 --append-system-prompt 参数或文件所做的任何配置，
+ * 而不是重复那部分工作。
  */
 function mergeWithUserAppend(options: BuildSystemPromptOptions): string {
 	const userAppend = options.appendSystemPrompt;

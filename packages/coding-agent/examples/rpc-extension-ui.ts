@@ -1,17 +1,27 @@
 /**
  * RPC Extension UI Example (TUI)
+ * RPC 扩展 UI 示例（TUI）
  *
  * A lightweight TUI chat client that spawns the agent in RPC mode.
+ * 一个轻量级 TUI 聊天客户端，以 RPC 模式启动 agent。
  * Demonstrates how to build a custom UI on top of the RPC protocol,
+ * 演示如何在 RPC 协议之上构建自定义 UI，
  * including handling extension UI requests (select, confirm, input, editor).
+ * 包括处理扩展 UI 请求（select、confirm、input、editor）。
  *
  * Usage: npx tsx examples/rpc-extension-ui.ts
+ * 用法：npx tsx examples/rpc-extension-ui.ts
  *
  * Slash commands:
+ * 斜杠命令：
  *   /select  - demo select dialog
+ *   /select  —— 演示选择对话框
  *   /confirm - demo confirm dialog
+ *   /confirm —— 演示确认对话框
  *   /input   - demo input dialog
+ *   /input   —— 演示输入对话框
  *   /editor  - demo editor dialog
+ *   /editor  —— 演示编辑器对话框
  */
 
 import { spawn } from "node:child_process";
@@ -33,6 +43,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // ============================================================================
 // ANSI helpers
+// ANSI 辅助常量
 // ============================================================================
 
 const GREEN = "\x1b[32m";
@@ -46,6 +57,7 @@ const RESET = "\x1b[0m";
 
 // ============================================================================
 // Extension UI request type (subset of rpc-types.ts)
+// 扩展 UI 请求类型（rpc-types.ts 的子集）
 // ============================================================================
 
 interface ExtensionUIRequest {
@@ -67,6 +79,7 @@ interface ExtensionUIRequest {
 
 // ============================================================================
 // Output log: accumulates styled lines, renders the tail that fits
+// 输出日志：累积带样式的行，渲染能容纳的末尾部分
 // ============================================================================
 
 class OutputLog implements Component {
@@ -104,6 +117,7 @@ class OutputLog implements Component {
 
 // ============================================================================
 // Loading indicator: "Agent: Working." -> ".." -> "..." -> "."
+// 加载指示器："Agent: Working." -> ".." -> "..." -> "."
 // ============================================================================
 
 class LoadingIndicator implements Component {
@@ -136,6 +150,7 @@ class LoadingIndicator implements Component {
 
 // ============================================================================
 // Prompt input: label + single-line input
+// 提示输入框：标签 + 单行输入
 // ============================================================================
 
 class PromptInput implements Component {
@@ -165,6 +180,7 @@ class PromptInput implements Component {
 
 // ============================================================================
 // Dialog components: replace the prompt input during interactive requests
+// 对话框组件：交互式请求期间替换提示输入框
 // ============================================================================
 
 class SelectDialog implements Component {
@@ -250,6 +266,7 @@ class InputDialog implements Component {
 
 // ============================================================================
 // Main
+// 主流程
 // ============================================================================
 
 async function main() {
@@ -274,6 +291,7 @@ async function main() {
 	}
 
 	// -- TUI setup --
+	// -- TUI 初始化 --
 
 	const terminal = new ProcessTerminal();
 	const tui: TUI = new TuiMainScreen(terminal);
@@ -290,6 +308,7 @@ async function main() {
 	tui.setFocus(promptInput.input);
 
 	// -- Agent communication --
+	// -- agent 通信 --
 
 	function send(obj: Record<string, unknown>): void {
 		agent.stdin!.write(`${JSON.stringify(obj)}\n`);
@@ -305,8 +324,11 @@ async function main() {
 	}
 
 	// -- Bottom area management --
+	// -- 底部区域管理 --
 	// The bottom of the screen is either the prompt input or a dialog.
+	// 屏幕底部区域要么是提示输入框，要么是对话框。
 	// These helpers swap between them.
+	// 这些辅助函数负责在两者之间切换。
 
 	let activeDialog: Component | null = null;
 
@@ -354,6 +376,7 @@ async function main() {
 	}
 
 	// -- Extension UI dialog handling --
+	// -- 扩展 UI 对话框处理 --
 
 	function showSelectDialog(title: string, options: string[], onDone: (value: string | undefined) => void): void {
 		const dialog = new SelectDialog(title, options);
@@ -388,6 +411,7 @@ async function main() {
 
 		switch (method) {
 			// Dialog methods: replace prompt with interactive component
+			// 对话框方法：用交互式组件替换提示输入框
 			case "select": {
 				showSelectDialog(req.title ?? "Select", req.options ?? [], (value) => {
 					if (value !== undefined) {
@@ -432,6 +456,7 @@ async function main() {
 			}
 
 			// Fire-and-forget methods: display as notification
+			// 发送后不管的方法：以通知形式显示
 			case "notify": {
 				const notifyType = (req.notifyType as string) ?? "info";
 				const color = notifyType === "error" ? RED : notifyType === "warning" ? YELLOW : MAGENTA;
@@ -467,6 +492,7 @@ async function main() {
 	}
 
 	// -- Slash commands (local, not sent to agent) --
+	// -- 斜杠命令（本地处理，不发送给 agent）--
 
 	function handleSlashCommand(cmd: string): boolean {
 		switch (cmd) {
@@ -517,6 +543,7 @@ async function main() {
 	}
 
 	// -- Process agent stdout --
+	// -- 处理 agent 的标准输出 --
 
 	const stdoutRl = readline.createInterface({ input: agent.stdout!, terminal: false });
 
@@ -586,6 +613,7 @@ async function main() {
 	});
 
 	// -- User input --
+	// -- 用户输入 --
 
 	promptInput.input.onSubmit = (value) => {
 		const trimmed = value.trim();
@@ -617,6 +645,7 @@ async function main() {
 	};
 
 	// -- Agent exit --
+	// -- agent 退出 --
 
 	agent.on("exit", (code) => {
 		tui.stop();
@@ -626,6 +655,7 @@ async function main() {
 	});
 
 	// -- Start --
+	// -- 启动 --
 
 	outputLog.append(`${BOLD}RPC Chat${RESET}`);
 	outputLog.append(`${DIM}Type a message and press Enter. Esc to abort or exit. Ctrl+D to quit.${RESET}`);

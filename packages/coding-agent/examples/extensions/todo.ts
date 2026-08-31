@@ -1,13 +1,20 @@
 /**
  * Todo Extension - Demonstrates state management via session entries
+ * 待办事项扩展 —— 演示通过会话条目进行状态管理
  *
  * This extension:
+ * 本扩展的功能：
  * - Registers a `todo` tool for the LLM to manage todos
+ * - 注册一个 `todo` 工具，供 LLM 管理待办事项
  * - Registers a `/todos` command for users to view the list
+ * - 注册一个 `/todos` 命令，供用户查看列表
  *
  * State is stored in tool result details (not external files), which allows
+ * 状态保存在工具结果的 details 中（而非外部文件），这样可以
  * proper branching - when you branch, the todo state is automatically
+ * 正确地支持分支 —— 当切换分支时，待办状态会自动
  * correct for that point in history.
+ * 还原为该历史节点下的正确状态。
  */
 
 import { StringEnum } from "@earendil-works/pi-ai";
@@ -36,6 +43,7 @@ const TodoParams = Type.Object({
 
 /**
  * UI component for the /todos command
+ * /todos 命令的 UI 组件
  */
 class TodoListComponent {
 	private todos: Todo[];
@@ -104,12 +112,15 @@ class TodoListComponent {
 
 export default function (pi: ExtensionAPI) {
 	// In-memory state (reconstructed from session on load)
+	// 内存状态（加载时从会话重建）
 	let todos: Todo[] = [];
 	let nextId = 1;
 
 	/**
 	 * Reconstruct state from session entries.
+	 * 从会话条目重建状态。
 	 * Scans tool results for this tool and applies them in order.
+	 * 扫描本工具的工具结果并按顺序应用。
 	 */
 	const reconstructState = (ctx: ExtensionContext) => {
 		todos = [];
@@ -129,10 +140,12 @@ export default function (pi: ExtensionAPI) {
 	};
 
 	// Reconstruct state on session events
+	// 在会话事件发生时重建状态
 	pi.on("session_start", async (_event, ctx) => reconstructState(ctx));
 	pi.on("session_tree", async (_event, ctx) => reconstructState(ctx));
 
 	// Register the todo tool for the LLM
+	// 为 LLM 注册 todo 工具
 	pi.registerTool({
 		name: "todo",
 		label: "Todo",
@@ -281,6 +294,7 @@ export default function (pi: ExtensionAPI) {
 	});
 
 	// Register the /todos command for users
+	// 为用户注册 /todos 命令
 	pi.registerCommand("todos", {
 		description: "Show all todos on the current branch",
 		handler: async (_args, ctx) => {
